@@ -52,6 +52,7 @@ DEMONYM = {"fr": ["French"], "be": ["Belgian"], "it": ["Italian"], "al": ["Alban
            "mg": ["Malagasy"], "ma": ["Moroccan"], "tg": ["Togolese", "Lome", "Lomé"], "np": ["Nepali", "Nepalese", "Kathmandu"],
            "in": ["Indian", "New Delhi"], "bd": ["Bangladeshi", "Dhaka"], "id": ["Indonesian", "Jakarta"], "ph": ["Filipino", "Philippine", "Manila"],
            "tl": ["East Timor", "Timorese", "Dili"], "mn": ["Mongolian", "Ulaanbaatar"]}
+NAMES = re.compile(r"\b(National Rally|Rassemblement National|Democratic Rally|Rally for the Republic|Rally Party|March (?:\d{1,2}|of the|Movement))\b", re.I)
 LABOUR = re.compile(r"\b(workers?|unions?|staff|employees|teachers?|students?|pupils?|nurses|doctors|national strike|general strike|walkout|pay|wages?|cost[- ]of[- ]living|pensions?|public[- ]sector)\b", re.I)
 SPORT = re.compile(r"\b(afcon|qualif\w*|world cup|cup|league|fifa|uefa|match|goal\w*|coach|striker|olympic\w*|tournament|grand prix|tennis|cricket|rugby)\b", re.I)
 NUMBER = re.compile(r"\b\d{1,3}(?:[,.\s]\d{3})+\b|\b\d{2,}\b")
@@ -134,9 +135,10 @@ def poll(reg, matchers, log=print):
         if tier not in ("A", "B"): continue                         # only trusted outlets reach the page
         # precision first: the headline itself must name a tracked country and a protest term; sport is screened out.
         # The summary is used only to spot figures for the review queue, never to decide relevance.
-        if not PROTEST.search(title) or SPORT.search(title): continue
+        ptitle = NAMES.sub(" ", title)          # party and place names that contain protest words ("National Rally") do not count
+        if not PROTEST.search(ptitle) or SPORT.search(title): continue
         # "strike" alone is ambiguous (military strikes): then the headline must also show a labour or student context
-        if all(re.match(r"strik", m.group(0), re.I) for m in PROTEST.finditer(title)) and not LABOUR.search(title): continue
+        if all(re.match(r"strik", m.group(0), re.I) for m in PROTEST.finditer(ptitle)) and not LABOUR.search(title): continue
         mids = [m for m, rx in matchers if rx.search(title)]
         if not mids: continue
         hay = title + " " + summ
